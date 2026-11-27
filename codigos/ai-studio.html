@@ -1,0 +1,2967 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>AI Studio</title>
+<link rel="manifest" href="#" id="pwa-manifest">
+<style>
+/* ═══════════════════════════════════════
+   RESET E BASE
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f172a;
+  --bg2:       #1e293b;
+  --bg3:       #334155;
+  --borda:     #475569;
+  --texto:     #f1f5f9;
+  --texto2:    #94a3b8;
+  --primaria:  #6366f1;
+  --primaria2: #818cf8;
+  --verde:     #22c55e;
+  --vermelho:  #ef4444;
+  --amarelo:   #f59e0b;
+  --radius:    10px;
+  --sombra:    0 4px 24px rgba(0,0,0,0.4);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--texto);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════
+   LAYOUT PRINCIPAL
+═══════════════════════════════════════ */
+#app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* SIDEBAR */
+#sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--bg2);
+  border-right: 1px solid var(--borda);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+
+#sidebar.fechado {
+  transform: translateX(-260px);
+  position: absolute;
+  height: 100%;
+}
+
+#sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--borda);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#sidebar-header h1 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primaria2);
+  flex: 1;
+}
+
+#btn-novo-chat {
+  background: var(--primaria);
+  border: none;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+#btn-novo-chat:hover { background: var(--primaria2); }
+
+#lista-chats {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.chat-item {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--texto2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+  position: relative;
+}
+.chat-item:hover { background: var(--bg3); color: var(--texto); }
+.chat-item.ativo { background: var(--bg3); color: var(--texto); }
+
+.chat-item-titulo {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-item-apagar {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--vermelho);
+  cursor: pointer;
+  font-size: 15px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+.chat-item:hover .chat-item-apagar { opacity: 1; }
+
+#sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--borda);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.btn-sidebar {
+  background: none;
+  border: 1px solid var(--borda);
+  color: var(--texto2);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+}
+.btn-sidebar:hover { background: var(--bg3); color: var(--texto); border-color: var(--primaria); }
+
+/* ÁREA PRINCIPAL */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* TOPBAR */
+#topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--borda);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+#btn-menu {
+  background: none;
+  border: none;
+  color: var(--texto2);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+#btn-menu:hover { color: var(--texto); }
+
+#select-modelo {
+  flex: 1;
+  max-width: 320px;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+#select-modelo:focus { border-color: var(--primaria); }
+
+#info-tokens {
+  font-size: 12px;
+  color: var(--texto2);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-custo {
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--amarelo);
+}
+
+#btn-config {
+  background: none;
+  border: none;
+  color: var(--texto2);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+#btn-config:hover { color: var(--texto); }
+
+/* ÁREA DE MENSAGENS */
+#mensagens {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+#mensagens::-webkit-scrollbar { width: 6px; }
+#mensagens::-webkit-scrollbar-track { background: transparent; }
+#mensagens::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+/* MENSAGENS */
+.msg {
+  display: flex;
+  gap: 10px;
+  max-width: 820px;
+  width: 100%;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+.msg.usuario { flex-direction: row-reverse; align-self: flex-end; }
+.msg.assistente { align-self: flex-start; }
+.msg.sistema { align-self: center; }
+
+.msg-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.msg.usuario .msg-avatar { background: var(--primaria); }
+.msg.assistente .msg-avatar { background: var(--bg3); }
+
+.msg-conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: calc(100% - 44px);
+}
+
+.msg-balao {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: break-word;
+}
+.msg.usuario .msg-balao {
+  background: var(--primaria);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+.msg.assistente .msg-balao {
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  border-bottom-left-radius: 3px;
+}
+.msg.sistema .msg-balao {
+  background: var(--bg3);
+  color: var(--texto2);
+  font-size: 12px;
+  border-radius: 20px;
+  padding: 6px 14px;
+}
+
+.msg-meta {
+  font-size: 11px;
+  color: var(--texto2);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.msg.usuario .msg-meta { justify-content: flex-end; }
+
+.msg-acoes {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.msg:hover .msg-acoes { opacity: 1; }
+
+.btn-acao-msg {
+  background: none;
+  border: none;
+  color: var(--texto2);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.btn-acao-msg:hover { background: var(--bg3); color: var(--texto); }
+
+/* CÓDIGO NAS MENSAGENS */
+.msg-balao pre {
+  background: var(--bg);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 8px 0;
+  font-size: 13px;
+  position: relative;
+}
+.msg-balao code {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+.msg-balao p { margin: 4px 0; }
+.msg-balao ul, .msg-balao ol { padding-left: 20px; margin: 4px 0; }
+.msg-balao h1,.msg-balao h2,.msg-balao h3 { margin: 8px 0 4px; }
+.msg-balao blockquote {
+  border-left: 3px solid var(--primaria);
+  padding-left: 12px;
+  color: var(--texto2);
+  margin: 6px 0;
+}
+.msg-balao table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.msg-balao th, .msg-balao td {
+  border: 1px solid var(--borda);
+  padding: 6px 10px;
+  text-align: left;
+}
+.msg-balao th { background: var(--bg3); }
+
+.btn-copiar-codigo {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--bg3);
+  border: none;
+  color: var(--texto2);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+pre:hover .btn-copiar-codigo { opacity: 1; }
+
+/* DIGITANDO */
+.digitando {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 0;
+}
+.digitando span {
+  width: 7px; height: 7px;
+  background: var(--texto2);
+  border-radius: 50%;
+  animation: pulso 1.2s infinite;
+}
+.digitando span:nth-child(2) { animation-delay: 0.2s; }
+.digitando span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulso {
+  0%,80%,100% { transform: scale(0.7); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ANEXOS NA MENSAGEM */
+.msg-anexos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.anexo-chip {
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--texto2);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.anexo-chip.imagem { border-color: var(--verde); color: var(--verde); }
+.anexo-chip.arquivo { border-color: var(--amarelo); color: var(--amarelo); }
+.anexo-chip.zip { border-color: var(--primaria2); color: var(--primaria2); }
+
+/* PREVIEW DE IMAGEM */
+.preview-img {
+  max-width: 220px;
+  max-height: 160px;
+  border-radius: 8px;
+  border: 1px solid var(--borda);
+  object-fit: cover;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.preview-img:hover { opacity: 0.85; }
+
+/* ÁREA DE INPUT */
+#input-area {
+  background: var(--bg2);
+  border-top: 1px solid var(--borda);
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+
+/* FILA DE ANEXOS */
+#fila-anexos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  display: none;
+}
+#fila-anexos.visivel { display: flex; }
+
+.anexo-preview {
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 200px;
+}
+.anexo-preview img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.anexo-preview-nome {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--texto2);
+}
+.anexo-preview-remover {
+  background: none;
+  border: none;
+  color: var(--vermelho);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+/* BARRA DE DIGITAÇÃO */
+#barra-input {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 8px 10px;
+  transition: border-color 0.2s;
+}
+#barra-input:focus-within { border-color: var(--primaria); }
+
+#btn-anexar {
+  background: none;
+  border: none;
+  color: var(--texto2);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: color 0.2s;
+  line-height: 1;
+}
+#btn-anexar:hover { color: var(--primaria2); }
+
+#input-arquivo { display: none; }
+
+#campo-texto {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--texto);
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  min-height: 24px;
+  max-height: 160px;
+  line-height: 1.5;
+  overflow-y: auto;
+}
+#campo-texto::placeholder { color: var(--texto2); }
+
+#btn-voz {
+  background: none;
+  border: none;
+  color: var(--texto2);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: color 0.2s;
+  line-height: 1;
+}
+#btn-voz:hover { color: var(--primaria2); }
+#btn-voz.gravando { color: var(--vermelho); animation: pisca 1s infinite; }
+@keyframes pisca { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+#btn-enviar {
+  background: var(--primaria);
+  border: none;
+  color: #fff;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, transform 0.1s;
+}
+#btn-enviar:hover { background: var(--primaria2); }
+#btn-enviar:active { transform: scale(0.95); }
+#btn-enviar:disabled { background: var(--bg3); cursor: not-allowed; }
+
+/* PAINEL DE CONFIGURAÇÕES */
+#painel-config {
+  position: fixed;
+  top: 0; right: 0;
+  width: 360px;
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--borda);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  box-shadow: var(--sombra);
+}
+#painel-config.aberto { transform: translateX(0); }
+
+#config-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--borda);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#config-header h2 { font-size: 16px; }
+
+#btn-fechar-config {
+  background: none;
+  border: none;
+  color: var(--texto2);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#config-corpo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.config-secao h3 {
+  font-size: 13px;
+  color: var(--texto2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.config-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.config-campo label {
+  font-size: 13px;
+  color: var(--texto2);
+}
+.config-campo input,
+.config-campo select,
+.config-campo textarea {
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.config-campo input:focus,
+.config-campo select:focus,
+.config-campo textarea:focus { border-color: var(--primaria); }
+.config-campo textarea { resize: vertical; min-height: 80px; }
+
+.config-campo input[type="range"] {
+  padding: 4px 0;
+  accent-color: var(--primaria);
+}
+
+.config-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.config-linha label { font-size: 13px; color: var(--texto2); }
+
+.toggle {
+  width: 40px; height: 22px;
+  background: var(--bg3);
+  border-radius: 11px;
+  position: relative;
+  cursor: pointer;
+  border: 1px solid var(--borda);
+  transition: background 0.2s;
+}
+.toggle.ativo { background: var(--primaria); border-color: var(--primaria); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: left 0.2s;
+}
+.toggle.ativo::after { left: 20px; }
+
+.btn-config-acao {
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  padding: 9px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+  margin-bottom: 6px;
+}
+.btn-config-acao:hover { background: var(--borda); }
+.btn-config-acao.perigo { color: var(--vermelho); border-color: var(--vermelho); }
+.btn-config-acao.perigo:hover { background: rgba(239,68,68,0.1); }
+
+/* MODAL LIGHTBOX */
+#lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+#lightbox.aberto { display: flex; }
+#lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+/* OVERLAY SIDEBAR MOBILE */
+#overlay-sidebar {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 99;
+}
+#overlay-sidebar.visivel { display: block; }
+
+/* TOAST */
+#toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg3);
+  border: 1px solid var(--borda);
+  color: var(--texto);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 500;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#toast.visivel {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* TELA VAZIA */
+#tela-vazia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 12px;
+  color: var(--texto2);
+  text-align: center;
+  padding: 40px;
+}
+#tela-vazia .icone { font-size: 48px; opacity: 0.4; }
+#tela-vazia h2 { font-size: 18px; color: var(--texto); opacity: 0.7; }
+#tela-vazia p { font-size: 13px; max-width: 320px; }
+
+.sugestoes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+  max-width: 400px;
+}
+.sugestao-btn {
+  background: var(--bg2);
+  border: 1px solid var(--borda);
+  color: var(--texto2);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: all 0.15s;
+}
+.sugestao-btn:hover { background: var(--bg3); color: var(--texto); border-color: var(--primaria); }
+
+/* RESPONSIVO MOBILE */
+@media (max-width: 640px) {
+  #sidebar {
+    position: absolute;
+    height: 100%;
+    transform: translateX(-260px);
+  }
+  #sidebar.aberto {
+    transform: translateX(0);
+  }
+  #painel-config { width: 100%; }
+  .sugestoes-grid { grid-template-columns: 1fr; }
+  #select-modelo { max-width: 180px; }
+}
+
+/* SCROLLBAR GLOBAL */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <span>🤖</span>
+      <h1>AI Studio</h1>
+      <button id="btn-novo-chat" title="Novo chat">+ Novo</button>
+    </div>
+    <div id="lista-chats"></div>
+    <div id="sidebar-footer">
+      <button class="btn-sidebar" id="btn-exportar-chat">📥 Exportar conversa</button>
+      <button class="btn-sidebar" id="btn-importar-chat">📤 Importar conversa</button>
+      <button class="btn-sidebar" id="btn-abrir-config">⚙️ Configurações</button>
+    </div>
+  </aside>
+
+  <!-- OVERLAY MOBILE -->
+  <div id="overlay-sidebar"></div>
+
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <button id="btn-menu" title="Menu">☰</button>
+      <select id="select-modelo" title="Modelo de IA"></select>
+      <div id="info-tokens">
+        <span id="badge-tokens" class="badge-custo" style="display:none">0 tokens</span>
+      </div>
+      <button id="btn-config" title="Configurações">⚙️</button>
+    </div>
+
+    <!-- MENSAGENS -->
+    <div id="mensagens">
+      <!-- Tela vazia inicial -->
+      <div id="tela-vazia">
+        <div class="icone">⚡</div>
+        <h2>AI Studio</h2>
+        <p>Chat leve e econômico com suporte a múltiplas IAs</p>
+        <div class="sugestoes-grid">
+          <button class="sugestao-btn" data-texto="Resuma este texto jurídico para mim:">📄 Resumir texto</button>
+          <button class="sugestao-btn" data-texto="Analise este documento e aponte os pontos principais:">🔍 Analisar documento</button>
+          <button class="sugestao-btn" data-texto="Corrija e melhore este texto:">✏️ Corrigir texto</button>
+          <button class="sugestao-btn" data-texto="Explique de forma simples:">💡 Explicar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUT -->
+    <div id="input-area">
+      <div id="fila-anexos"></div>
+      <div id="barra-input">
+        <button id="btn-anexar" title="Anexar arquivo/imagem">📎</button>
+        <input type="file" id="input-arquivo" multiple
+          accept="image/*,.pdf,.txt,.md,.js,.ts,.jsx,.tsx,.html,.css,.json,.xml,.csv,.zip,.py,.java,.c,.cpp,.cs,.php,.rb,.go,.rs,.sql">
+        <textarea id="campo-texto" placeholder="Digite sua mensagem..." rows="1"></textarea>
+        <button id="btn-voz" title="Falar">🎤</button>
+        <button id="btn-enviar" title="Enviar">➤</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- PAINEL DE CONFIGURAÇÕES -->
+  <aside id="painel-config">
+    <div id="config-header">
+      <h2>⚙️ Configurações</h2>
+      <button id="btn-fechar-config">✕</button>
+    </div>
+    <div id="config-corpo">
+
+      <div class="config-secao">
+        <h3>🔑 Chaves de API</h3>
+        <div class="config-campo">
+          <label>Monica / OpenAI (sk-...)</label>
+          <input type="password" id="cfg-chave-openai" placeholder="sk-...">
+        </div>
+        <div class="config-campo">
+          <label>Google Gemini</label>
+          <input type="password" id="cfg-chave-gemini" placeholder="AIza...">
+        </div>
+        <div class="config-campo">
+          <label>Anthropic Claude</label>
+          <input type="password" id="cfg-chave-claude" placeholder="sk-ant-...">
+        </div>
+        <div class="config-campo">
+          <label>Ollama (URL local)</label>
+          <input type="text" id="cfg-url-ollama" placeholder="http://localhost:11434">
+        </div>
+        <button class="btn-config-acao" id="btn-salvar-chaves">💾 Salvar chaves</button>
+        <button class="btn-config-acao" id="btn-testar-conexao">🔌 Testar conexão</button>
+      </div>
+
+      <div class="config-secao">
+        <h3>🧠 Comportamento</h3>
+        <div class="config-campo">
+          <label>Instrução do sistema (prompt)</label>
+          <textarea id="cfg-system-prompt" placeholder="Você é um assistente jurídico especializado..."></textarea>
+        </div>
+        <div class="config-campo">
+          <label>Temperatura: <span id="cfg-temp-val">0.7</span></label>
+          <input type="range" id="cfg-temperatura" min="0" max="2" step="0.1" value="0.7">
+        </div>
+        <div class="config-campo">
+          <label>Máx. tokens resposta</label>
+          <input type="number" id="cfg-max-tokens" value="2048" min="256" max="8192" step="256">
+        </div>
+        <div class="config-linha">
+          <label>Memória de contexto (últimas mensagens)</label>
+          <input type="number" id="cfg-contexto" value="10" min="2" max="50" style="width:60px">
+        </div>
+      </div>
+
+      <div class="config-secao">
+        <h3>🖼️ Imagens</h3>
+        <div class="config-linha">
+          <label>Comprimir imagens antes de enviar</label>
+          <div class="toggle ativo" id="toggle-comprimir"></div>
+        </div>
+        <div class="config-campo">
+          <label>Qualidade da compressão: <span id="cfg-qualidade-val">80</span>%</label>
+          <input type="range" id="cfg-qualidade" min="30" max="100" step="5" value="80">
+        </div>
+        <div class="config-campo">
+          <label>Tamanho máximo (px)</label>
+          <select id="cfg-tamanho-img">
+            <option value="512">512px (mais leve)</option>
+            <option value="768">768px</option>
+            <option value="1024" selected>1024px (padrão)</option>
+            <option value="1536">1536px</option>
+            <option value="2048">2048px (original)</option>
+          </select>
+        </div>
+        <div class="config-linha">
+          <label>Se IA não suporta visão → descrever em texto</label>
+          <div class="toggle ativo" id="toggle-fallback-img"></div>
+        </div>
+      </div>
+
+      <div class="config-secao">
+        <h3>🔧 Dados</h3>
+        <button class="btn-config-acao" id="btn-exportar-config">📤 Exportar configurações</button>
+        <button class="btn-config-acao" id="btn-importar-config">📥 Importar configurações</button>
+        <button class="btn-config-acao perigo" id="btn-limpar-chats">🗑️ Apagar todos os chats</button>
+        <button class="btn-config-acao perigo" id="btn-limpar-tudo">⚠️ Resetar tudo</button>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- LIGHTBOX -->
+  <div id="lightbox"><img id="lightbox-img" src="" alt=""></div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <!-- INPUT OCULTO IMPORTAR -->
+  <input type="file" id="input-importar-chat" accept=".json" style="display:none">
+  <input type="file" id="input-importar-config" accept=".json" style="display:none">
+
+</div>
+<!-- FIM PARTE 1 — cole a PARTE 2 abaixo desta linha -->
+<!-- ═══════════════════════════════════════
+     PARTE 2 — UTILITÁRIOS + STORAGE
+═══════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────
+// UTILITÁRIOS GERAIS
+// ─────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
+
+function toast(msg, tempo = 2500) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('visivel');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('visivel'), tempo);
+}
+
+function gerarId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function formatarData(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' })
+    + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+}
+
+function formatarTokens(n) {
+  if (!n) return '0';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+  return n.toString();
+}
+
+function copiarTexto(txt) {
+  navigator.clipboard.writeText(txt)
+    .then(() => toast('✅ Copiado!'))
+    .catch(() => {
+      const el = document.createElement('textarea');
+      el.value = txt;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      toast('✅ Copiado!');
+    });
+}
+
+function baixarArquivo(nome, conteudo, tipo = 'application/json') {
+  const blob = new Blob([conteudo], { type: tipo });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nome;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function sanitizarHTML(txt) {
+  return txt
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Markdown simples para HTML
+function markdownParaHTML(txt) {
+  if (!txt) return '';
+  let h = txt;
+
+  // Blocos de código com linguagem
+  h = h.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const l = lang || 'código';
+    const id = gerarId();
+    return `<pre data-lang="${l}"><code>${sanitizarHTML(code.trim())}</code>`
+      + `<button class="btn-copiar-codigo" onclick="copiarTexto(document.getElementById('c${id}').textContent)">`
+      + `Copiar</button></pre>`;
+  });
+
+  // Código inline
+  h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Negrito e itálico
+  h = h.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Títulos
+  h = h.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  h = h.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  h = h.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // Blockquote
+  h = h.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+
+  // Listas não ordenadas
+  h = h.replace(/^[\*\-] (.+)$/gm, '<li>$1</li>');
+  h = h.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
+
+  // Listas ordenadas
+  h = h.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+  // Linha horizontal
+  h = h.replace(/^---+$/gm, '<hr>');
+
+  // Links
+  h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // Parágrafos (linhas duplas)
+  h = h.replace(/\n\n+/g, '</p><p>');
+  h = '<p>' + h + '</p>';
+
+  // Quebras simples dentro de parágrafos
+  h = h.replace(/\n/g, '<br>');
+
+  // Limpar p vazios
+  h = h.replace(/<p>\s*<\/p>/g, '');
+  h = h.replace(/<p>(<h[1-6]>)/g, '$1');
+  h = h.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
+  h = h.replace(/<p>(<ul>)/g, '$1');
+  h = h.replace(/(<\/ul>)<\/p>/g, '$1');
+  h = h.replace(/<p>(<pre>)/g, '$1');
+  h = h.replace(/(<\/pre>)<\/p>/g, '$1');
+  h = h.replace(/<p>(<blockquote>)/g, '$1');
+  h = h.replace(/(<\/blockquote>)<\/p>/g, '$1');
+  h = h.replace(/<p>(<hr>)<\/p>/g, '$1');
+
+  return h;
+}
+
+// ─────────────────────────────────────────
+// STORAGE — IndexedDB com fallback localStorage
+// ─────────────────────────────────────────
+const DB = (() => {
+  const NOME = 'AIStudio';
+  const VER  = 1;
+  let db = null;
+
+  function abrir() {
+    return new Promise((ok, err) => {
+      if (db) return ok(db);
+      const req = indexedDB.open(NOME, VER);
+      req.onupgradeneeded = e => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains('chats'))
+          d.createObjectStore('chats', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('config'))
+          d.createObjectStore('config', { keyPath: 'chave' });
+      };
+      req.onsuccess = e => { db = e.target.result; ok(db); };
+      req.onerror   = () => err(req.error);
+    });
+  }
+
+  async function salvarChat(chat) {
+    try {
+      const d = await abrir();
+      return new Promise((ok, err) => {
+        const tx = d.transaction('chats', 'readwrite');
+        tx.objectStore('chats').put(chat);
+        tx.oncomplete = ok;
+        tx.onerror = () => err(tx.error);
+      });
+    } catch {
+      // fallback localStorage
+      const chats = JSON.parse(localStorage.getItem('ai_chats') || '{}');
+      chats[chat.id] = chat;
+      localStorage.setItem('ai_chats', JSON.stringify(chats));
+    }
+  }
+
+  async function listarChats() {
+    try {
+      const d = await abrir();
+      return new Promise((ok, err) => {
+        const tx = d.transaction('chats', 'readonly');
+        const req = tx.objectStore('chats').getAll();
+        req.onsuccess = () => ok(req.result || []);
+        req.onerror   = () => err(req.error);
+      });
+    } catch {
+      const chats = JSON.parse(localStorage.getItem('ai_chats') || '{}');
+      return Object.values(chats);
+    }
+  }
+
+  async function carregarChat(id) {
+    try {
+      const d = await abrir();
+      return new Promise((ok, err) => {
+        const tx = d.transaction('chats', 'readonly');
+        const req = tx.objectStore('chats').get(id);
+        req.onsuccess = () => ok(req.result || null);
+        req.onerror   = () => err(req.error);
+      });
+    } catch {
+      const chats = JSON.parse(localStorage.getItem('ai_chats') || '{}');
+      return chats[id] || null;
+    }
+  }
+
+  async function apagarChat(id) {
+    try {
+      const d = await abrir();
+      return new Promise((ok, err) => {
+        const tx = d.transaction('chats', 'readwrite');
+        tx.objectStore('chats').delete(id);
+        tx.oncomplete = ok;
+        tx.onerror = () => err(tx.error);
+      });
+    } catch {
+      const chats = JSON.parse(localStorage.getItem('ai_chats') || '{}');
+      delete chats[id];
+      localStorage.setItem('ai_chats', JSON.stringify(chats));
+    }
+  }
+
+  async function apagarTodosChats() {
+    try {
+      const d = await abrir();
+      return new Promise((ok, err) => {
+        const tx = d.transaction('chats', 'readwrite');
+        tx.objectStore('chats').clear();
+        tx.oncomplete = ok;
+        tx.onerror = () => err(tx.error);
+      });
+    } catch {
+      localStorage.removeItem('ai_chats');
+    }
+  }
+
+  async function salvarConfig(chave, valor) {
+    try {
+      const d = await abrir();
+      return new Promise((ok, err) => {
+        const tx = d.transaction('config', 'readwrite');
+        tx.objectStore('config').put({ chave, valor });
+        tx.oncomplete = ok;
+        tx.onerror = () => err(tx.error);
+      });
+    } catch {
+      localStorage.setItem('ai_cfg_' + chave, JSON.stringify(valor));
+    }
+  }
+
+  async function carregarConfig(chave, padrao = null) {
+    try {
+      const d = await abrir();
+      return new Promise((ok, err) => {
+        const tx = d.transaction('config', 'readonly');
+        const req = tx.objectStore('config').get(chave);
+        req.onsuccess = () => ok(req.result ? req.result.valor : padrao);
+        req.onerror   = () => err(req.error);
+      });
+    } catch {
+      const v = localStorage.getItem('ai_cfg_' + chave);
+      return v !== null ? JSON.parse(v) : padrao;
+    }
+  }
+
+  async function limparTudo() {
+    try {
+      const d = await abrir();
+      await new Promise((ok, err) => {
+        const tx = d.transaction(['chats','config'], 'readwrite');
+        tx.objectStore('chats').clear();
+        tx.objectStore('config').clear();
+        tx.oncomplete = ok;
+        tx.onerror = () => err(tx.error);
+      });
+    } catch {}
+    localStorage.clear();
+  }
+
+  return { salvarChat, listarChats, carregarChat, apagarChat,
+           apagarTodosChats, salvarConfig, carregarConfig, limparTudo };
+})();
+</script>
+<!-- FIM PARTE 2 — cole a PARTE 3 abaixo desta linha -->
+<!-- ═══════════════════════════════════════
+     PARTE 3 — PROVEDORES + IA
+═══════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────
+// CONFIGURAÇÃO DOS PROVEDORES
+// ─────────────────────────────────────────
+const PROVEDORES = {
+  monica: {
+    nome: 'Monica',
+    baseURL: 'https://api.monica.im/v1',
+    tipo: 'openai',
+    modelos: [
+      { id: 'gpt-4o',              nome: 'GPT-4o (Monica)',        visao: true  },
+      { id: 'gpt-4o-mini',         nome: 'GPT-4o Mini (Monica)',   visao: true  },
+      { id: 'claude-3-5-sonnet',   nome: 'Claude 3.5 Sonnet',      visao: true  },
+      { id: 'claude-3-5-haiku',    nome: 'Claude 3.5 Haiku',       visao: true  },
+      { id: 'gemini-1.5-pro',      nome: 'Gemini 1.5 Pro',         visao: true  },
+      { id: 'gemini-2.0-flash',    nome: 'Gemini 2.0 Flash',       visao: true  },
+      { id: 'gemini-2.5-flash',    nome: 'Gemini 2.5 Flash',       visao: true  },
+      { id: 'deepseek-v3',         nome: 'DeepSeek V3',            visao: false },
+      { id: 'deepseek-r1',         nome: 'DeepSeek R1',            visao: false },
+      { id: 'o1-mini',             nome: 'O1 Mini',                visao: false },
+      { id: 'o3-mini',             nome: 'O3 Mini',                visao: false },
+    ]
+  },
+  openai: {
+    nome: 'OpenAI',
+    baseURL: 'https://api.openai.com/v1',
+    tipo: 'openai',
+    modelos: [
+      { id: 'gpt-4o',              nome: 'GPT-4o',                 visao: true  },
+      { id: 'gpt-4o-mini',         nome: 'GPT-4o Mini',            visao: true  },
+      { id: 'gpt-4-turbo',         nome: 'GPT-4 Turbo',            visao: true  },
+      { id: 'o1-mini',             nome: 'O1 Mini',                visao: false },
+      { id: 'o3-mini',             nome: 'O3 Mini',                visao: false },
+    ]
+  },
+  gemini: {
+    nome: 'Google Gemini',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta',
+    tipo: 'gemini',
+    modelos: [
+      { id: 'gemini-2.5-flash-preview-05-20', nome: 'Gemini 2.5 Flash', visao: true },
+      { id: 'gemini-2.0-flash',               nome: 'Gemini 2.0 Flash', visao: true },
+      { id: 'gemini-1.5-pro',                 nome: 'Gemini 1.5 Pro',   visao: true },
+      { id: 'gemini-1.5-flash',               nome: 'Gemini 1.5 Flash', visao: true },
+    ]
+  },
+  claude: {
+    nome: 'Anthropic Claude',
+    baseURL: 'https://api.anthropic.com/v1',
+    tipo: 'claude',
+    modelos: [
+      { id: 'claude-opus-4-5',          nome: 'Claude Opus 4.5',        visao: true  },
+      { id: 'claude-sonnet-4-5',        nome: 'Claude Sonnet 4.5',      visao: true  },
+      { id: 'claude-haiku-3-5',         nome: 'Claude Haiku 3.5',       visao: true  },
+      { id: 'claude-3-5-sonnet-20241022', nome: 'Claude 3.5 Sonnet',    visao: true  },
+      { id: 'claude-3-5-haiku-20241022',  nome: 'Claude 3.5 Haiku',     visao: true  },
+    ]
+  },
+  ollama: {
+    nome: 'Ollama (local)',
+    baseURL: 'http://localhost:11434',
+    tipo: 'ollama',
+    modelos: [] // carregados dinamicamente
+  },
+  groq: {
+    nome: 'Groq',
+    baseURL: 'https://api.groq.com/openai/v1',
+    tipo: 'openai',
+    modelos: [
+      { id: 'llama-3.3-70b-versatile',  nome: 'Llama 3.3 70B',          visao: false },
+      { id: 'llama-3.1-8b-instant',     nome: 'Llama 3.1 8B Instant',   visao: false },
+      { id: 'mixtral-8x7b-32768',       nome: 'Mixtral 8x7B',           visao: false },
+      { id: 'gemma2-9b-it',             nome: 'Gemma 2 9B',             visao: false },
+    ]
+  },
+  deepseek: {
+    nome: 'DeepSeek',
+    baseURL: 'https://api.deepseek.com/v1',
+    tipo: 'openai',
+    modelos: [
+      { id: 'deepseek-chat',   nome: 'DeepSeek Chat',    visao: false },
+      { id: 'deepseek-reasoner', nome: 'DeepSeek R1',    visao: false },
+    ]
+  },
+  openrouter: {
+    nome: 'OpenRouter',
+    baseURL: 'https://openrouter.ai/api/v1',
+    tipo: 'openai',
+    modelos: [
+      { id: 'anthropic/claude-3.5-sonnet',       nome: 'Claude 3.5 Sonnet',   visao: true  },
+      { id: 'google/gemini-2.0-flash-exp:free',  nome: 'Gemini 2.0 Flash',    visao: true  },
+      { id: 'meta-llama/llama-3.3-70b-instruct', nome: 'Llama 3.3 70B',       visao: false },
+      { id: 'deepseek/deepseek-r1',              nome: 'DeepSeek R1',          visao: false },
+      { id: 'mistralai/mistral-nemo:free',       nome: 'Mistral Nemo (free)',  visao: false },
+    ]
+  }
+};
+
+// Estado global das chaves
+const CHAVES = {
+  openai:      '',
+  gemini:      '',
+  claude:      '',
+  ollama:      'http://localhost:11434',
+  groq:        '',
+  deepseek:    '',
+  openrouter:  '',
+  monica:      ''
+};
+
+// ─────────────────────────────────────────
+// DETECTAR PROVEDOR PELA CHAVE
+// ─────────────────────────────────────────
+function detectarProvedor(chave) {
+  if (!chave) return null;
+  if (chave.startsWith('AIza'))    return 'gemini';
+  if (chave.startsWith('sk-ant-')) return 'claude';
+  if (chave.startsWith('gsk_'))    return 'groq';
+  if (chave.startsWith('sk-or-'))  return 'openrouter';
+  if (chave.startsWith('sk-'))     return 'monica'; // Monica e OpenAI usam sk-
+  return null;
+}
+
+// Verificar se modelo suporta visão
+function modeloSuportaVisao(provedorId, modeloId) {
+  const prov = PROVEDORES[provedorId];
+  if (!prov) return false;
+  const m = prov.modelos.find(x => x.id === modeloId);
+  return m ? m.visao : false;
+}
+
+// ─────────────────────────────────────────
+// CHAMADAS DE API
+// ─────────────────────────────────────────
+
+// OpenAI / Monica / Groq / DeepSeek / OpenRouter (formato compatível)
+async function chamarOpenAI(baseURL, chave, modelo, mensagens, config) {
+  const resp = await fetch(`${baseURL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${chave}`
+    },
+    body: JSON.stringify({
+      model: modelo,
+      messages: mensagens,
+      temperature: config.temperatura ?? 0.7,
+      max_tokens: config.maxTokens ?? 2048,
+      stream: false
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Erro ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  return {
+    texto: data.choices?.[0]?.message?.content || '',
+    tokens: data.usage?.total_tokens || 0,
+    tokensEntrada: data.usage?.prompt_tokens || 0,
+    tokensSaida: data.usage?.completion_tokens || 0
+  };
+}
+
+// Gemini
+async function chamarGemini(chave, modelo, mensagens, config) {
+  const partes = mensagens
+    .filter(m => m.role !== 'system')
+    .map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: Array.isArray(m.content)
+        ? m.content.map(p => {
+            if (p.type === 'text') return { text: p.text };
+            if (p.type === 'image_url') {
+              const b64 = p.image_url.url.split(',')[1];
+              const mime = p.image_url.url.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+              return { inlineData: { mimeType: mime, data: b64 } };
+            }
+            return { text: '' };
+          })
+        : [{ text: m.content }]
+    }));
+
+  const systemMsg = mensagens.find(m => m.role === 'system');
+
+  const body = {
+    contents: partes,
+    generationConfig: {
+      temperature: config.temperatura ?? 0.7,
+      maxOutputTokens: config.maxTokens ?? 2048
+    }
+  };
+
+  if (systemMsg) {
+    body.systemInstruction = { parts: [{ text: systemMsg.content }] };
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${chave}`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Erro ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  const texto = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+  const tokens = (data.usageMetadata?.totalTokenCount) || 0;
+  return { texto, tokens, tokensEntrada: data.usageMetadata?.promptTokenCount || 0, tokensSaida: data.usageMetadata?.candidatesTokenCount || 0 };
+}
+
+// Claude
+async function chamarClaude(chave, modelo, mensagens, config) {
+  const system = mensagens.find(m => m.role === 'system')?.content || '';
+  const msgs = mensagens
+    .filter(m => m.role !== 'system')
+    .map(m => ({
+      role: m.role,
+      content: Array.isArray(m.content)
+        ? m.content.map(p => {
+            if (p.type === 'text') return { type: 'text', text: p.text };
+            if (p.type === 'image_url') {
+              const b64 = p.image_url.url.split(',')[1];
+              const mime = p.image_url.url.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+              return { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } };
+            }
+            return { type: 'text', text: '' };
+          })
+        : m.content
+    }));
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': chave,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: modelo,
+      max_tokens: config.maxTokens ?? 2048,
+      system: system || undefined,
+      messages: msgs
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Erro ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  return {
+    texto: data.content?.[0]?.text || '',
+    tokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+    tokensEntrada: data.usage?.input_tokens || 0,
+    tokensSaida: data.usage?.output_tokens || 0
+  };
+}
+
+// Ollama
+async function chamarOllama(baseURL, modelo, mensagens, config) {
+  const url = baseURL.replace(/\/$/, '') + '/api/chat';
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: modelo,
+      messages: mensagens.map(m => ({
+        role: m.role,
+        content: Array.isArray(m.content)
+          ? m.content.map(p => p.type === 'text' ? p.text : '[imagem]').join(' ')
+          : m.content
+      })),
+      stream: false,
+      options: {
+        temperature: config.temperatura ?? 0.7,
+        num_predict: config.maxTokens ?? 2048
+      }
+    })
+  });
+
+  if (!resp.ok) throw new Error(`Ollama erro ${resp.status}`);
+  const data = await resp.json();
+  return {
+    texto: data.message?.content || '',
+    tokens: (data.prompt_eval_count || 0) + (data.eval_count || 0),
+    tokensEntrada: data.prompt_eval_count || 0,
+    tokensSaida: data.eval_count || 0
+  };
+}
+
+// Carregar modelos Ollama dinamicamente
+async function carregarModelosOllama(urlBase) {
+  try {
+    const url = (urlBase || 'http://localhost:11434').replace(/\/$/, '') + '/api/tags';
+    const resp = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    return (data.models || []).map(m => ({
+      id: m.name,
+      nome: m.name,
+      visao: m.name.includes('vision') || m.name.includes('llava') || m.name.includes('minicpm')
+    }));
+  } catch { return []; }
+}
+
+// ─────────────────────────────────────────
+// FUNÇÃO PRINCIPAL — CHAMAR IA
+// ─────────────────────────────────────────
+async function chamarIA(provedorId, modeloId, mensagens, config) {
+  const prov = PROVEDORES[provedorId];
+  if (!prov) throw new Error('Provedor não encontrado: ' + provedorId);
+
+  const chave = CHAVES[provedorId] || '';
+
+  switch (prov.tipo) {
+    case 'openai':
+      return chamarOpenAI(prov.baseURL, chave, modeloId, mensagens, config);
+    case 'gemini':
+      return chamarGemini(chave, modeloId, mensagens, config);
+    case 'claude':
+      return chamarClaude(chave, modeloId, mensagens, config);
+    case 'ollama':
+      return chamarOllama(CHAVES.ollama || prov.baseURL, modeloId, mensagens, config);
+    default:
+      throw new Error('Tipo de provedor desconhecido: ' + prov.tipo);
+  }
+}
+
+// Testar conexão com provedor
+async function testarConexao(provedorId) {
+  try {
+    const prov = PROVEDORES[provedorId];
+    if (!prov) return { ok: false, msg: 'Provedor inválido' };
+
+    if (provedorId === 'ollama') {
+      const modelos = await carregarModelosOllama(CHAVES.ollama);
+      return modelos.length > 0
+        ? { ok: true, msg: `✅ Ollama: ${modelos.length} modelo(s) encontrado(s)` }
+        : { ok: false, msg: '❌ Ollama: nenhum modelo encontrado' };
+    }
+
+    const chave = CHAVES[provedorId];
+    if (!chave) return { ok: false, msg: '❌ Chave não configurada' };
+
+    // Teste leve com 1 token
+    const resultado = await chamarIA(provedorId,
+      prov.modelos[0]?.id || 'gpt-4o-mini',
+      [{ role: 'user', content: 'Olá' }],
+      { temperatura: 0, maxTokens: 5 }
+    );
+    return { ok: true, msg: `✅ ${prov.nome}: conexão OK` };
+  } catch (e) {
+    return { ok: false, msg: `❌ ${e.message}` };
+  }
+}
+</script>
+<!-- FIM PARTE 3 — cole a PARTE 4 abaixo desta linha -->
+<!-- ═══════════════════════════════════════
+     PARTE 4 — IMAGEM + ARQUIVO + ZIP
+═══════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────
+// PROCESSAMENTO DE IMAGEM
+// ─────────────────────────────────────────
+
+// Comprime imagem e retorna base64
+function comprimirImagem(arquivo, maxPx, qualidade) {
+  return new Promise((ok, err) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+
+        // Redimensionar mantendo proporção
+        if (width > maxPx || height > maxPx) {
+          if (width > height) {
+            height = Math.round(height * maxPx / width);
+            width = maxPx;
+          } else {
+            width = Math.round(width * maxPx / height);
+            height = maxPx;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataURL = canvas.toDataURL('image/jpeg', qualidade / 100);
+        const tamanhoKB = Math.round(dataURL.length * 0.75 / 1024);
+
+        ok({
+          dataURL,
+          largura: width,
+          altura: height,
+          tamanhoKB,
+          nome: arquivo.name,
+          tipo: 'image/jpeg'
+        });
+      };
+      img.onerror = () => err(new Error('Imagem inválida'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => err(new Error('Erro ao ler arquivo'));
+    reader.readAsDataURL(arquivo);
+  });
+}
+
+// Converter imagem para descrição de texto (fallback para IAs sem visão)
+async function imagemParaTexto(imgData, provedorId, modeloId, config) {
+  // Usa uma IA com visão para descrever a imagem
+  // Tenta Gemini Flash (gratuito) primeiro, depois o provedor atual
+  const provedoresComVisao = ['gemini', 'monica', 'openai', 'claude'];
+  let provedorVisao = null;
+  let modeloVisao = null;
+
+  // Verificar se provedor atual tem visão
+  if (modeloSuportaVisao(provedorId, modeloId)) {
+    provedorVisao = provedorId;
+    modeloVisao = modeloId;
+  } else {
+    // Procurar provedor com chave configurada e visão
+    for (const pid of provedoresComVisao) {
+      if (CHAVES[pid] && PROVEDORES[pid]) {
+        const m = PROVEDORES[pid].modelos.find(x => x.visao);
+        if (m) { provedorVisao = pid; modeloVisao = m.id; break; }
+      }
+    }
+  }
+
+  if (!provedorVisao) {
+    return `[Imagem: ${imgData.nome} — ${imgData.largura}×${imgData.altura}px, ${imgData.tamanhoKB}KB. Nenhuma IA com visão disponível para descrever.]`;
+  }
+
+  try {
+    const msgs = [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image_url',
+            image_url: { url: imgData.dataURL }
+          },
+          {
+            type: 'text',
+            text: 'Descreva detalhadamente o conteúdo desta imagem. Se houver texto, transcreva-o integralmente. Se for um documento jurídico, destaque os elementos importantes.'
+          }
+        ]
+      }
+    ];
+
+    const resultado = await chamarIA(provedorVisao, modeloVisao, msgs, { temperatura: 0.3, maxTokens: 1024 });
+    return `[Descrição da imagem "${imgData.nome}"]\n${resultado.texto}`;
+  } catch (e) {
+    return `[Imagem: ${imgData.nome} — ${imgData.largura}×${imgData.altura}px. Erro ao descrever: ${e.message}]`;
+  }
+}
+
+// ─────────────────────────────────────────
+// PROCESSAMENTO DE ARQUIVOS DE TEXTO
+// ─────────────────────────────────────────
+
+// Detectar encoding e ler arquivo como texto
+function lerArquivoTexto(arquivo) {
+  return new Promise((ok, err) => {
+    const reader = new FileReader();
+
+    // Tentar UTF-8 primeiro
+    reader.onload = e => {
+      let texto = e.target.result;
+
+      // Verificar se tem caracteres ilegíveis (encoding errado)
+      const ilegivel = (texto.match(/[^\x00-\x7F\u00C0-\u024F\u0400-\u04FF]/g) || []).length;
+      const total = texto.length;
+
+      if (ilegivel / total > 0.1 && total > 100) {
+        // Tentar Latin-1 / Windows-1252
+        const reader2 = new FileReader();
+        reader2.onload = e2 => ok(e2.target.result);
+        reader2.onerror = () => ok(texto); // fallback para UTF-8
+        reader2.readAsText(arquivo, 'windows-1252');
+      } else {
+        ok(texto);
+      }
+    };
+    reader.onerror = () => err(new Error('Erro ao ler arquivo'));
+    reader.readAsText(arquivo, 'utf-8');
+  });
+}
+
+// ─────────────────────────────────────────
+// PROCESSAMENTO DE ZIP
+// ─────────────────────────────────────────
+
+// Ler ZIP sem biblioteca externa (usando FileReader + estrutura ZIP manual)
+// Para arquivos ZIP simples — lê os arquivos de texto dentro
+async function lerZIP(arquivo) {
+  return new Promise((ok, err) => {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const buffer = e.target.result;
+        const bytes = new Uint8Array(buffer);
+        const arquivos = [];
+
+        // Procurar assinaturas de arquivos no ZIP (PK\x03\x04)
+        let i = 0;
+        while (i < bytes.length - 4) {
+          // Assinatura de entrada local: 50 4B 03 04
+          if (bytes[i] === 0x50 && bytes[i+1] === 0x4B &&
+              bytes[i+2] === 0x03 && bytes[i+3] === 0x04) {
+
+            const versao = bytes[i+4] | (bytes[i+5] << 8);
+            const flags  = bytes[i+6] | (bytes[i+7] << 8);
+            const metodo = bytes[i+8] | (bytes[i+9] << 8);
+            const tamComp   = bytes[i+18] | (bytes[i+19] << 8) | (bytes[i+20] << 16) | (bytes[i+21] << 24);
+            const tamDescomp= bytes[i+22] | (bytes[i+23] << 8) | (bytes[i+24] << 16) | (bytes[i+25] << 24);
+            const tamNome   = bytes[i+26] | (bytes[i+27] << 8);
+            const tamExtra  = bytes[i+28] | (bytes[i+29] << 8);
+
+            const nomeBytes = bytes.slice(i+30, i+30+tamNome);
+            const nome = new TextDecoder('utf-8').decode(nomeBytes);
+
+            const inicio = i + 30 + tamNome + tamExtra;
+            const dados  = bytes.slice(inicio, inicio + tamComp);
+
+            // Só processar arquivos de texto (não pastas, não binários)
+            const ehTexto = /\.(txt|md|js|ts|jsx|tsx|html|css|json|xml|csv|py|java|c|cpp|cs|php|rb|go|rs|sql|yaml|yml|env|sh|bat|ini|cfg|conf|log)$/i.test(nome);
+            const ehPasta = nome.endsWith('/');
+
+            if (!ehPasta && tamDescomp > 0) {
+              if (ehTexto && metodo === 0) {
+                // Sem compressão — lê direto
+                const texto = new TextDecoder('utf-8').decode(dados);
+                arquivos.push({ nome, texto, tamanho: tamDescomp, tipo: 'texto' });
+              } else if (ehTexto && metodo === 8) {
+                // Deflate — tenta descomprimir
+                try {
+                  const ds = new DecompressionStream('deflate-raw');
+                  const writer = ds.writable.getWriter();
+                  const reader2 = ds.readable.getReader();
+                  writer.write(dados);
+                  writer.close();
+                  const chunks = [];
+                  let done = false;
+                  while (!done) {
+                    const { value, done: d } = await reader2.read();
+                    if (value) chunks.push(value);
+                    done = d;
+                  }
+                  const total = chunks.reduce((s, c) => s + c.length, 0);
+                  const merged = new Uint8Array(total);
+                  let offset = 0;
+                  for (const c of chunks) { merged.set(c, offset); offset += c.length; }
+                  const texto = new TextDecoder('utf-8').decode(merged);
+                  arquivos.push({ nome, texto, tamanho: tamDescomp, tipo: 'texto' });
+                } catch {
+                  arquivos.push({ nome, texto: '[arquivo comprimido — não foi possível extrair]', tamanho: tamDescomp, tipo: 'binario' });
+                }
+              } else if (!ehTexto) {
+                arquivos.push({ nome, texto: null, tamanho: tamDescomp, tipo: 'binario' });
+              }
+            }
+
+            i = inicio + tamComp;
+          } else {
+            i++;
+          }
+        }
+
+        ok(arquivos);
+      } catch (e2) {
+        err(new Error('Erro ao processar ZIP: ' + e2.message));
+      }
+    };
+    reader.onerror = () => err(new Error('Erro ao ler ZIP'));
+    reader.readAsArrayBuffer(arquivo);
+  });
+}
+
+// ─────────────────────────────────────────
+// PROCESSAR QUALQUER ARQUIVO ANEXADO
+// ─────────────────────────────────────────
+async function processarAnexo(arquivo, configImg) {
+  const nome = arquivo.name;
+  const tipo = arquivo.type;
+  const tamanhoMB = arquivo.size / 1024 / 1024;
+
+  // Limite de 50MB
+  if (tamanhoMB > 50) {
+    throw new Error(`Arquivo muito grande: ${tamanhoMB.toFixed(1)}MB (máx 50MB)`);
+  }
+
+  // IMAGEM
+  if (tipo.startsWith('image/')) {
+    const imgData = await comprimirImagem(arquivo, configImg.maxPx, configImg.qualidade);
+    return {
+      tipo: 'imagem',
+      nome,
+      dados: imgData,
+      preview: imgData.dataURL,
+      descricao: `Imagem: ${nome} (${imgData.largura}×${imgData.altura}px, ${imgData.tamanhoKB}KB após compressão)`
+    };
+  }
+
+  // ZIP
+  if (nome.endsWith('.zip') || tipo === 'application/zip' || tipo === 'application/x-zip-compressed') {
+    const arquivos = await lerZIP(arquivo);
+    const textos = arquivos.filter(a => a.tipo === 'texto');
+    const binarios = arquivos.filter(a => a.tipo === 'binario');
+
+    let resumo = `📦 ZIP: ${nome}\n`;
+    resumo += `Total: ${arquivos.length} arquivo(s) — ${textos.length} texto(s), ${binarios.length} binário(s)\n\n`;
+
+    for (const arq of textos) {
+      const preview = arq.texto.slice(0, 3000);
+      const cortado = arq.texto.length > 3000;
+      resumo += `── ${arq.nome} (${(arq.tamanho/1024).toFixed(1)}KB)\n`;
+      resumo += preview;
+      if (cortado) resumo += `\n... [${arq.texto.length - 3000} caracteres omitidos]`;
+      resumo += '\n\n';
+    }
+
+    if (binarios.length > 0) {
+      resumo += `Arquivos binários (não lidos): ${binarios.map(b => b.nome).join(', ')}`;
+    }
+
+    return {
+      tipo: 'zip',
+      nome,
+      texto: resumo,
+      arquivos,
+      descricao: `ZIP com ${arquivos.length} arquivo(s)`
+    };
+  }
+
+  // TEXTO / CÓDIGO / JSON etc.
+  const texto = await lerArquivoTexto(arquivo);
+  const limite = 50000; // ~50k chars
+  const cortado = texto.length > limite;
+
+  return {
+    tipo: 'arquivo',
+    nome,
+    texto: cortado ? texto.slice(0, limite) + `\n\n... [${texto.length - limite} caracteres omitidos]` : texto,
+    tamanhoOriginal: texto.length,
+    descricao: `Arquivo: ${nome} (${(arquivo.size/1024).toFixed(1)}KB)`
+  };
+}
+
+// ─────────────────────────────────────────
+// MONTAR MENSAGEM COM ANEXOS PARA A IA
+// ─────────────────────────────────────────
+async function montarMensagemComAnexos(textoUsuario, anexos, provedorId, modeloId, config) {
+  if (!anexos || anexos.length === 0) {
+    return [{ role: 'user', content: textoUsuario }];
+  }
+
+  const temVisao = modeloSuportaVisao(provedorId, modeloId);
+  const usarFallbackImg = config.fallbackImg !== false;
+
+  // Construir partes da mensagem
+  const partes = [];
+  const textosExtras = [];
+
+  for (const anexo of anexos) {
+    if (anexo.tipo === 'imagem') {
+      if (temVisao) {
+        // Manda imagem diretamente para a IA ver
+        partes.push({
+          type: 'image_url',
+          image_url: { url: anexo.dados.dataURL }
+        });
+        textosExtras.push(`[Imagem anexada: ${anexo.nome}]`);
+      } else if (usarFallbackImg) {
+        // IA não tem visão — descreve em texto
+        toast('🔄 Convertendo imagem em texto...');
+        const descricao = await imagemParaTexto(anexo.dados, provedorId, modeloId, config);
+        textosExtras.push(descricao);
+      } else {
+        textosExtras.push(`[Imagem: ${anexo.nome} — IA atual não suporta visão]`);
+      }
+    } else if (anexo.tipo === 'zip' || anexo.tipo === 'arquivo') {
+      textosExtras.push(`\n\n${anexo.texto}`);
+    }
+  }
+
+  // Montar conteúdo final
+  const textoFinal = [textoUsuario, ...textosExtras].filter(Boolean).join('\n\n');
+
+  // Se tem imagens diretas, usar formato multipart
+  if (partes.length > 0) {
+    const content = [
+      { type: 'text', text: textoFinal },
+      ...partes
+    ];
+    return [{ role: 'user', content }];
+  }
+
+  return [{ role: 'user', content: textoFinal }];
+}
+</script>
+<!-- FIM PARTE 4 — cole a PARTE 5 abaixo desta linha -->
+<!-- ═══════════════════════════════════════
+     PARTE 5 — CÉREBRO DO CHAT + CONTEXTO
+═══════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────
+// ESTADO GLOBAL DO APP
+// ─────────────────────────────────────────
+const APP = {
+  chatAtual: null,       // id do chat ativo
+  chats: {},             // { id: { id, titulo, msgs, criadoEm, atualizadoEm } }
+  provedorAtual: 'monica',
+  modeloAtual: '',
+  enviando: false,
+  anexosPendentes: [],   // arquivos prontos para enviar
+  config: {
+    systemPrompt: 'Você é um assistente jurídico especializado. Responda sempre em português do Brasil de forma clara e objetiva.',
+    temperatura: 0.7,
+    maxTokens: 2048,
+    contexto: 10,        // quantas mensagens anteriores mandar para a IA
+    comprimirImg: true,
+    qualidadeImg: 80,
+    maxPxImg: 1024,
+    fallbackImg: true,
+    voz: true
+  }
+};
+
+// ─────────────────────────────────────────
+// GERENCIAR CHATS
+// ─────────────────────────────────────────
+function criarChat() {
+  const id = gerarId();
+  const chat = {
+    id,
+    titulo: 'Nova conversa',
+    msgs: [],
+    provedorId: APP.provedorAtual,
+    modeloId: APP.modeloAtual,
+    criadoEm: Date.now(),
+    atualizadoEm: Date.now(),
+    totalTokens: 0
+  };
+  APP.chats[id] = chat;
+  return chat;
+}
+
+async function salvarChatAtual() {
+  if (!APP.chatAtual || !APP.chats[APP.chatAtual]) return;
+  await DB.salvarChat(APP.chats[APP.chatAtual]);
+}
+
+async function carregarTodosChats() {
+  const lista = await DB.listarChats();
+  APP.chats = {};
+  for (const c of lista) APP.chats[c.id] = c;
+}
+
+function gerarTituloChat(primeiraMensagem) {
+  const txt = primeiraMensagem.slice(0, 60).trim();
+  return txt.length < primeiraMensagem.length ? txt + '…' : txt;
+}
+
+// ─────────────────────────────────────────
+// MONTAR CONTEXTO PARA IA
+// ─────────────────────────────────────────
+function montarContexto(chat, novaMensagem) {
+  const msgs = [];
+
+  // System prompt
+  if (APP.config.systemPrompt) {
+    msgs.push({ role: 'system', content: APP.config.systemPrompt });
+  }
+
+  // Histórico limitado pelo contexto configurado
+  const historico = chat.msgs.slice(-APP.config.contexto * 2);
+  for (const m of historico) {
+    // Não incluir mensagens de sistema/erro no contexto
+    if (m.papel === 'sistema') continue;
+    msgs.push({
+      role: m.papel === 'usuario' ? 'user' : 'assistant',
+      content: m.conteudoIA || m.texto
+    });
+  }
+
+  // Nova mensagem do usuário (já formatada com anexos)
+  msgs.push(novaMensagem);
+
+  return msgs;
+}
+
+// ─────────────────────────────────────────
+// ENVIAR MENSAGEM
+// ─────────────────────────────────────────
+async function enviarMensagem(textoUsuario, anexos = []) {
+  if (APP.enviando) return;
+  if (!textoUsuario.trim() && anexos.length === 0) return;
+
+  // Verificar provedor/chave
+  const provedorId = APP.provedorAtual;
+  const modeloId   = APP.modeloAtual;
+
+  if (provedorId !== 'ollama' && !CHAVES[provedorId]) {
+    toast('⚠️ Configure a chave de API nas configurações');
+    abrirConfig();
+    return;
+  }
+
+  APP.enviando = true;
+  $('btn-enviar').disabled = true;
+
+  // Criar chat se não existir
+  if (!APP.chatAtual || !APP.chats[APP.chatAtual]) {
+    const chat = criarChat();
+    APP.chatAtual = chat.id;
+  }
+
+  const chat = APP.chats[APP.chatAtual];
+
+  // Gerar título automático na primeira mensagem
+  if (chat.msgs.length === 0 && textoUsuario.trim()) {
+    chat.titulo = gerarTituloChat(textoUsuario);
+  }
+
+  // Adicionar mensagem do usuário na UI
+  const idMsgUsuario = gerarId();
+  const descAnexos = anexos.map(a => a.descricao || a.nome).filter(Boolean);
+
+  chat.msgs.push({
+    id: idMsgUsuario,
+    papel: 'usuario',
+    texto: textoUsuario,
+    anexos: descAnexos,
+    imagensPreview: anexos.filter(a => a.tipo === 'imagem').map(a => a.preview),
+    ts: Date.now()
+  });
+
+  renderizarMensagem(chat.msgs[chat.msgs.length - 1]);
+  scrollParaBaixo();
+
+  // Mostrar indicador de digitando
+  const idDigitando = mostrarDigitando();
+
+  try {
+    // Montar mensagem com anexos
+    const configImg = {
+      maxPx: APP.config.maxPxImg,
+      qualidade: APP.config.qualidadeImg,
+      fallbackImg: APP.config.fallbackImg
+    };
+
+    const [msgFormatada] = await montarMensagemComAnexos(
+      textoUsuario, anexos, provedorId, modeloId, configImg
+    );
+
+    // Montar contexto completo
+    const contexto = montarContexto(chat, msgFormatada);
+
+    // Chamar IA
+    const resultado = await chamarIA(provedorId, modeloId, contexto, {
+      temperatura: APP.config.temperatura,
+      maxTokens: APP.config.maxTokens
+    });
+
+    // Remover digitando
+    removerDigitando(idDigitando);
+
+    // Adicionar resposta
+    const idMsgIA = gerarId();
+    chat.msgs.push({
+      id: idMsgIA,
+      papel: 'assistente',
+      texto: resultado.texto,
+      conteudoIA: resultado.texto,
+      tokens: resultado.tokens,
+      tokensEntrada: resultado.tokensEntrada,
+      tokensSaida: resultado.tokensSaida,
+      provedor: provedorId,
+      modelo: modeloId,
+      ts: Date.now()
+    });
+
+    chat.totalTokens = (chat.totalTokens || 0) + (resultado.tokens || 0);
+    chat.atualizadoEm = Date.now();
+
+    renderizarMensagem(chat.msgs[chat.msgs.length - 1]);
+    scrollParaBaixo();
+
+    // Atualizar badge de tokens
+    atualizarBadgeTokens(resultado.tokens);
+
+    // Salvar
+    await salvarChatAtual();
+    renderizarListaChats();
+
+  } catch (e) {
+    removerDigitando(idDigitando);
+
+    // Mensagem de erro amigável
+    let msgErro = e.message || 'Erro desconhecido';
+    if (msgErro.includes('401') || msgErro.includes('403')) {
+      msgErro = '❌ Chave de API inválida ou sem permissão';
+    } else if (msgErro.includes('429')) {
+      msgErro = '⏳ Limite de requisições atingido. Aguarde um momento.';
+    } else if (msgErro.includes('fetch') || msgErro.includes('network') || msgErro.includes('Failed')) {
+      msgErro = '🌐 Erro de conexão. Verifique sua internet.';
+    }
+
+    chat.msgs.push({
+      id: gerarId(),
+      papel: 'sistema',
+      texto: msgErro,
+      ts: Date.now()
+    });
+
+    renderizarMensagem(chat.msgs[chat.msgs.length - 1]);
+    scrollParaBaixo();
+    toast('❌ ' + msgErro, 4000);
+  }
+
+  APP.enviando = false;
+  $('btn-enviar').disabled = false;
+  APP.anexosPendentes = [];
+  limparFilaAnexos();
+}
+
+// ─────────────────────────────────────────
+// EXPORTAR / IMPORTAR CHAT
+// ─────────────────────────────────────────
+function exportarChat() {
+  if (!APP.chatAtual || !APP.chats[APP.chatAtual]) {
+    toast('⚠️ Nenhum chat aberto');
+    return;
+  }
+  const chat = APP.chats[APP.chatAtual];
+  const json = JSON.stringify(chat, null, 2);
+  const nome = `chat-${chat.titulo.slice(0,30).replace(/[^a-z0-9]/gi,'-')}-${Date.now()}.json`;
+  baixarArquivo(nome, json);
+  toast('✅ Chat exportado!');
+}
+
+function importarChat(arquivo) {
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const chat = JSON.parse(e.target.result);
+      if (!chat.id || !chat.msgs) throw new Error('Formato inválido');
+      chat.id = gerarId(); // novo id para não sobrescrever
+      APP.chats[chat.id] = chat;
+      await DB.salvarChat(chat);
+      APP.chatAtual = chat.id;
+      renderizarListaChats();
+      renderizarChat();
+      toast('✅ Chat importado!');
+    } catch {
+      toast('❌ Arquivo inválido');
+    }
+  };
+  reader.readAsText(arquivo);
+}
+
+// ─────────────────────────────────────────
+// EXPORTAR / IMPORTAR CONFIGURAÇÕES
+// ─────────────────────────────────────────
+function exportarConfig() {
+  const dados = {
+    config: APP.config,
+    provedorAtual: APP.provedorAtual,
+    modeloAtual: APP.modeloAtual,
+    exportadoEm: new Date().toISOString()
+    // Chaves NÃO são exportadas por segurança
+  };
+  baixarArquivo(`aistudio-config-${Date.now()}.json`, JSON.stringify(dados, null, 2));
+  toast('✅ Configurações exportadas (sem chaves)');
+}
+
+function importarConfig(arquivo) {
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const dados = JSON.parse(e.target.result);
+      if (dados.config) Object.assign(APP.config, dados.config);
+      if (dados.provedorAtual) APP.provedorAtual = dados.provedorAtual;
+      if (dados.modeloAtual) APP.modeloAtual = dados.modeloAtual;
+      await salvarConfiguracoes();
+      aplicarConfiguracoes();
+      toast('✅ Configurações importadas!');
+    } catch {
+      toast('❌ Arquivo de configuração inválido');
+    }
+  };
+  reader.readAsText(arquivo);
+}
+</script>
+<!-- FIM PARTE 5 — cole a PARTE 6 abaixo desta linha -->
+<!-- ═══════════════════════════════════════
+     PARTE 6 — INTERFACE + EVENTOS + INIT
+═══════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────
+// RENDERIZAÇÃO
+// ─────────────────────────────────────────
+function renderizarMensagem(msg) {
+  const container = $('mensagens');
+
+  // Esconder tela vazia
+  const telaVazia = $('tela-vazia');
+  if (telaVazia) telaVazia.style.display = 'none';
+
+  const div = document.createElement('div');
+  div.className = `msg ${msg.papel}`;
+  div.id = 'msg-' + msg.id;
+
+  const avatar = msg.papel === 'usuario' ? '👤' :
+                 msg.papel === 'assistente' ? '🤖' : 'ℹ️';
+
+  let conteudoHTML = '';
+
+  // Previews de imagem
+  if (msg.imagensPreview && msg.imagensPreview.length > 0) {
+    conteudoHTML += '<div class="msg-anexos">';
+    for (const src of msg.imagensPreview) {
+      conteudoHTML += `<img class="preview-img" src="${src}" onclick="abrirLightbox('${src}')" title="Clique para ampliar">`;
+    }
+    conteudoHTML += '</div>';
+  }
+
+  // Chips de anexos
+  if (msg.anexos && msg.anexos.length > 0) {
+    conteudoHTML += '<div class="msg-anexos">';
+    for (const a of msg.anexos) {
+      const tipo = a.startsWith('Imagem') ? 'imagem' : a.startsWith('ZIP') ? 'zip' : 'arquivo';
+      const icone = tipo === 'imagem' ? '🖼️' : tipo === 'zip' ? '📦' : '📄';
+      conteudoHTML += `<span class="anexo-chip ${tipo}">${icone} ${sanitizarHTML(a)}</span>`;
+    }
+    conteudoHTML += '</div>';
+  }
+
+  // Texto da mensagem
+  if (msg.papel === 'usuario') {
+    conteudoHTML += `<div class="msg-balao">${sanitizarHTML(msg.texto).replace(/\n/g,'<br>')}</div>`;
+  } else if (msg.papel === 'assistente') {
+    conteudoHTML += `<div class="msg-balao">${markdownParaHTML(msg.texto)}</div>`;
+  } else {
+    conteudoHTML += `<div class="msg-balao">${sanitizarHTML(msg.texto)}</div>`;
+  }
+
+  // Meta (hora + tokens)
+  let meta = `<span>${formatarData(msg.ts)}</span>`;
+  if (msg.tokens) {
+    meta += `<span title="Tokens usados">${formatarTokens(msg.tokens)} tokens</span>`;
+  }
+  if (msg.modelo) {
+    meta += `<span title="Modelo usado">${msg.modelo}</span>`;
+  }
+
+  // Ações
+  let acoes = '';
+  if (msg.papel !== 'sistema') {
+    acoes = `<div class="msg-acoes">
+      <button class="btn-acao-msg" onclick="copiarTexto(${JSON.stringify(msg.texto)})" title="Copiar">📋</button>
+      ${msg.papel === 'assistente' ? `<button class="btn-acao-msg" onclick="regenerarMensagem('${msg.id}')" title="Regenerar">🔄</button>` : ''}
+    </div>`;
+  }
+
+  div.innerHTML = `
+    <div class="msg-avatar">${avatar}</div>
+    <div class="msg-conteudo">
+      ${conteudoHTML}
+      <div class="msg-meta">${meta}${acoes}</div>
+    </div>
+  `;
+
+  container.appendChild(div);
+}
+
+function renderizarChat() {
+  const container = $('mensagens');
+  // Limpar mensagens (manter tela vazia)
+  const telaVazia = $('tela-vazia');
+  container.innerHTML = '';
+  if (telaVazia) {
+    container.appendChild(telaVazia);
+  }
+
+  if (!APP.chatAtual || !APP.chats[APP.chatAtual]) {
+    if (telaVazia) telaVazia.style.display = '';
+    return;
+  }
+
+  const chat = APP.chats[APP.chatAtual];
+  if (telaVazia) telaVazia.style.display = 'none';
+
+  for (const msg of chat.msgs) {
+    renderizarMensagem(msg);
+  }
+  scrollParaBaixo();
+}
+
+function renderizarListaChats() {
+  const lista = $('lista-chats');
+  lista.innerHTML = '';
+
+  const chats = Object.values(APP.chats)
+    .sort((a, b) => (b.atualizadoEm || 0) - (a.atualizadoEm || 0));
+
+  if (chats.length === 0) {
+    lista.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--texto2);text-align:center">Nenhuma conversa ainda</div>';
+    return;
+  }
+
+  for (const chat of chats) {
+    const div = document.createElement('div');
+    div.className = 'chat-item' + (chat.id === APP.chatAtual ? ' ativo' : '');
+    div.innerHTML = `
+      <span>💬</span>
+      <span class="chat-item-titulo" title="${sanitizarHTML(chat.titulo)}">${sanitizarHTML(chat.titulo)}</span>
+      <button class="chat-item-apagar" title="Apagar" onclick="apagarChat('${chat.id}', event)">🗑️</button>
+    `;
+    div.addEventListener('click', () => abrirChat(chat.id));
+    lista.appendChild(div);
+  }
+}
+
+function mostrarDigitando() {
+  const id = 'dig-' + gerarId();
+  const div = document.createElement('div');
+  div.className = 'msg assistente';
+  div.id = id;
+  div.innerHTML = `
+    <div class="msg-avatar">🤖</div>
+    <div class="msg-conteudo">
+      <div class="msg-balao">
+        <div class="digitando"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  `;
+  $('mensagens').appendChild(div);
+  scrollParaBaixo();
+  return id;
+}
+
+function removerDigitando(id) {
+  const el = $(id);
+  if (el) el.remove();
+}
+
+function scrollParaBaixo() {
+  const el = $('mensagens');
+  setTimeout(() => el.scrollTop = el.scrollHeight, 50);
+}
+
+function atualizarBadgeTokens(tokens) {
+  const badge = $('badge-tokens');
+  if (!tokens) return;
+  badge.style.display = '';
+  badge.textContent = formatarTokens(tokens) + ' tokens';
+}
+
+// ─────────────────────────────────────────
+// AÇÕES DO CHAT
+// ─────────────────────────────────────────
+async function abrirChat(id) {
+  APP.chatAtual = id;
+  renderizarListaChats();
+  renderizarChat();
+  fecharSidebarMobile();
+}
+
+async function novoChat() {
+  const chat = criarChat();
+  APP.chatAtual = chat.id;
+  renderizarListaChats();
+  renderizarChat();
+  $('campo-texto').focus();
+  fecharSidebarMobile();
+}
+
+async function apagarChat(id, evento) {
+  if (evento) evento.stopPropagation();
+  if (!confirm('Apagar esta conversa?')) return;
+  await DB.apagarChat(id);
+  delete APP.chats[id];
+  if (APP.chatAtual === id) {
+    APP.chatAtual = null;
+  }
+  renderizarListaChats();
+  renderizarChat();
+  toast('🗑️ Conversa apagada');
+}
+
+async function regenerarMensagem(idMsg) {
+  if (!APP.chatAtual || !APP.chats[APP.chatAtual]) return;
+  const chat = APP.chats[APP.chatAtual];
+
+  // Encontrar índice da mensagem
+  const idx = chat.msgs.findIndex(m => m.id === idMsg);
+  if (idx < 0) return;
+
+  // Pegar a mensagem do usuário anterior
+  let idxUsuario = idx - 1;
+  while (idxUsuario >= 0 && chat.msgs[idxUsuario].papel !== 'usuario') idxUsuario--;
+  if (idxUsuario < 0) return;
+
+  const msgUsuario = chat.msgs[idxUsuario];
+
+  // Remover mensagens a partir da resposta
+  chat.msgs.splice(idx);
+  $('msg-' + idMsg)?.remove();
+
+  // Reenviar
+  await enviarMensagem(msgUsuario.texto, []);
+}
+
+function abrirLightbox(src) {
+  $('lightbox-img').src = src;
+  $('lightbox').classList.add('aberto');
+}
+
+// ─────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = $('sidebar');
+  const overlay = $('overlay-sidebar');
+  const aberto = sidebar.classList.toggle('aberto');
+  overlay.classList.toggle('visivel', aberto);
+  // Desktop: empurra o main
+  if (window.innerWidth > 640) {
+    sidebar.classList.toggle('fechado', !aberto);
+  }
+}
+
+function fecharSidebarMobile() {
+  if (window.innerWidth <= 640) {
+    $('sidebar').classList.remove('aberto');
+    $('overlay-sidebar').classList.remove('visivel');
+  }
+}
+
+// ─────────────────────────────────────────
+// CONFIGURAÇÕES
+// ─────────────────────────────────────────
+function abrirConfig() {
+  $('painel-config').classList.add('aberto');
+}
+
+function fecharConfig() {
+  $('painel-config').classList.remove('aberto');
+}
+
+function aplicarConfiguracoes() {
+  // Preencher campos
+  $('cfg-chave-openai').value   = CHAVES.monica || CHAVES.openai || '';
+  $('cfg-chave-gemini').value   = CHAVES.gemini || '';
+  $('cfg-chave-claude').value   = CHAVES.claude || '';
+  $('cfg-url-ollama').value     = CHAVES.ollama || 'http://localhost:11434';
+  $('cfg-system-prompt').value  = APP.config.systemPrompt || '';
+  $('cfg-temperatura').value    = APP.config.temperatura ?? 0.7;
+  $('cfg-temp-val').textContent = APP.config.temperatura ?? 0.7;
+  $('cfg-max-tokens').value     = APP.config.maxTokens ?? 2048;
+  $('cfg-contexto').value       = APP.config.contexto ?? 10;
+  $('cfg-qualidade').value      = APP.config.qualidadeImg ?? 80;
+  $('cfg-qualidade-val').textContent = APP.config.qualidadeImg ?? 80;
+  $('cfg-tamanho-img').value    = APP.config.maxPxImg ?? 1024;
+
+  $('toggle-comprimir').classList.toggle('ativo', APP.config.comprimirImg !== false);
+  $('toggle-fallback-img').classList.toggle('ativo', APP.config.fallbackImg !== false);
+
+  // Popular select de modelos
+  popularSelectModelos();
+}
+
+async function salvarConfiguracoes() {
+  // Chaves
+  const chaveOpenAI = $('cfg-chave-openai').value.trim();
+  if (chaveOpenAI) {
+    // Detectar se é Monica ou OpenAI
+    const provDetectado = detectarProvedor(chaveOpenAI);
+    if (provDetectado === 'monica' || provDetectado === 'openai') {
+      CHAVES.monica = chaveOpenAI;
+      CHAVES.openai = chaveOpenAI;
+    }
+  }
+  CHAVES.gemini  = $('cfg-chave-gemini').value.trim();
+  CHAVES.claude  = $('cfg-chave-claude').value.trim();
+  CHAVES.ollama  = $('cfg-url-ollama').value.trim() || 'http://localhost:11434';
+
+  // Config
+  APP.config.systemPrompt  = $('cfg-system-prompt').value.trim();
+  APP.config.temperatura   = parseFloat($('cfg-temperatura').value);
+  APP.config.maxTokens     = parseInt($('cfg-max-tokens').value);
+  APP.config.contexto      = parseInt($('cfg-contexto').value);
+  APP.config.qualidadeImg  = parseInt($('cfg-qualidade').value);
+  APP.config.maxPxImg      = parseInt($('cfg-tamanho-img').value);
+  APP.config.comprimirImg  = $('toggle-comprimir').classList.contains('ativo');
+  APP.config.fallbackImg   = $('toggle-fallback-img').classList.contains('ativo');
+
+  // Salvar no IndexedDB
+  await DB.salvarConfig('chaves', CHAVES);
+  await DB.salvarConfig('app_config', APP.config);
+  await DB.salvarConfig('provedor', APP.provedorAtual);
+  await DB.salvarConfig('modelo', APP.modeloAtual);
+
+  toast('✅ Configurações salvas!');
+  popularSelectModelos();
+}
+
+async function carregarConfiguracoesSalvas() {
+  const chaves = await DB.carregarConfig('chaves', {});
+  Object.assign(CHAVES, chaves);
+
+  const cfg = await DB.carregarConfig('app_config', {});
+  Object.assign(APP.config, cfg);
+
+  APP.provedorAtual = await DB.carregarConfig('provedor', 'monica');
+  APP.modeloAtual   = await DB.carregarConfig('modelo', '');
+}
+
+// ─────────────────────────────────────────
+// SELECT DE MODELOS
+// ─────────────────────────────────────────
+async function popularSelectModelos() {
+  const select = $('select-modelo');
+  select.innerHTML = '';
+
+  // Verificar Ollama
+  if (CHAVES.ollama || PROVEDORES.ollama.baseURL) {
+    const modelosOllama = await carregarModelosOllama(CHAVES.ollama);
+    PROVEDORES.ollama.modelos = modelosOllama;
+  }
+
+  // Montar grupos por provedor
+  const ordem = ['monica', 'gemini', 'claude', 'groq', 'openai', 'deepseek', 'openrouter', 'ollama'];
+
+  for (const pid of ordem) {
+    const prov = PROVEDORES[pid];
+    if (!prov || prov.modelos.length === 0) continue;
+
+    // Só mostrar provedores com chave configurada (exceto Ollama)
+    if (pid !== 'ollama' && !CHAVES[pid]) continue;
+
+    const grupo = document.createElement('optgroup');
+    grupo.label = prov.nome;
+
+    for (const m of prov.modelos) {
+      const opt = document.createElement('option');
+      opt.value = `${pid}::${m.id}`;
+      opt.textContent = m.nome + (m.visao ? ' 👁️' : '');
+      if (pid === APP.provedorAtual && m.id === APP.modeloAtual) opt.selected = true;
+      grupo.appendChild(opt);
+    }
+
+    select.appendChild(grupo);
+  }
+
+  // Se nenhum selecionado, selecionar primeiro disponível
+  if (!select.value && select.options.length > 0) {
+    select.selectedIndex = 0;
+    const [pid, mid] = select.value.split('::');
+    APP.provedorAtual = pid;
+    APP.modeloAtual   = mid;
+  }
+}
+
+// ─────────────────────────────────────────
+// FILA DE ANEXOS (UI)
+// ─────────────────────────────────────────
+function adicionarAnexoUI(anexo) {
+  const fila = $('fila-anexos');
+  fila.classList.add('visivel');
+
+  const div = document.createElement('div');
+  div.className = 'anexo-preview';
+  div.id = 'anexo-' + anexo.id;
+
+  let icone = '📄';
+  let preview = '';
+  if (anexo.tipo === 'imagem') {
+    icone = '🖼️';
+    preview = `<img src="${anexo.preview}" alt="">`;
+  } else if (anexo.tipo === 'zip') {
+    icone = '📦';
+  }
+
+  div.innerHTML = `
+    ${preview}
+    <span class="anexo-preview-nome" title="${sanitizarHTML(anexo.nome)}">${icone} ${sanitizarHTML(anexo.nome)}</span>
+    <button class="anexo-preview-remover" onclick="removerAnexo('${anexo.id}')" title="Remover">✕</button>
+  `;
+
+  fila.appendChild(div);
+}
+
+function removerAnexo(id) {
+  APP.anexosPendentes = APP.anexosPendentes.filter(a => a.id !== id);
+  $('anexo-' + id)?.remove();
+  if (APP.anexosPendentes.length === 0) {
+    $('fila-anexos').classList.remove('visivel');
+  }
+}
+
+function limparFilaAnexos() {
+  APP.anexosPendentes = [];
+  $('fila-anexos').innerHTML = '';
+  $('fila-anexos').classList.remove('visivel');
+}
+
+// ─────────────────────────────────────────
+// VOZ (RECONHECIMENTO DE FALA)
+// ─────────────────────────────────────────
+let reconhecimento = null;
+let gravando = false;
+
+function iniciarVoz() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast('⚠️ Seu navegador não suporta reconhecimento de voz'); return; }
+
+  if (gravando) {
+    reconhecimento?.stop();
+    return;
+  }
+
+  reconhecimento = new SR();
+  reconhecimento.lang = 'pt-BR';
+  reconhecimento.continuous = false;
+  reconhecimento.interimResults = false;
+
+  reconhecimento.onstart = () => {
+    gravando = true;
+    $('btn-voz').classList.add('gravando');
+    toast('🎤 Ouvindo...');
+  };
+
+  reconhecimento.onresult = e => {
+    const texto = e.results[0][0].transcript;
+    const campo = $('campo-texto');
+    campo.value += (campo.value ? ' ' : '') + texto;
+    ajustarAlturaCampo();
+  };
+
+  reconhecimento.onend = () => {
+    gravando = false;
+    $('btn-voz').classList.remove('gravando');
+  };
+
+  reconhecimento.onerror = e => {
+    gravando = false;
+    $('btn-voz').classList.remove('gravando');
+    if (e.error !== 'no-speech') toast('❌ Erro no microfone: ' + e.error);
+  };
+
+  reconhecimento.start();
+}
+
+// ─────────────────────────────────────────
+// AJUSTAR ALTURA DO CAMPO DE TEXTO
+// ─────────────────────────────────────────
+function ajustarAlturaCampo() {
+  const campo = $('campo-texto');
+  campo.style.height = 'auto';
+  campo.style.height = Math.min(campo.scrollHeight, 160) + 'px';
+}
+
+// ─────────────────────────────────────────
+// EVENTOS
+// ─────────────────────────────────────────
+function registrarEventos() {
+  // Menu / sidebar
+  $('btn-menu').addEventListener('click', toggleSidebar);
+  $('overlay-sidebar').addEventListener('click', fecharSidebarMobile);
+
+  // Novo chat
+  $('btn-novo-chat').addEventListener('click', novoChat);
+
+  // Config
+  $('btn-config').addEventListener('click', abrirConfig);
+  $('btn-abrir-config').addEventListener('click', abrirConfig);
+  $('btn-fechar-config').addEventListener('click', fecharConfig);
+
+  // Salvar chaves
+  $('btn-salvar-chaves').addEventListener('click', salvarConfiguracoes);
+
+  // Testar conexão
+  $('btn-testar-conexao').addEventListener('click', async () => {
+    toast('🔌 Testando...');
+    const pid = APP.provedorAtual;
+    const res = await testarConexao(pid);
+    toast(res.msg, 4000);
+  });
+
+  // Sliders
+  $('cfg-temperatura').addEventListener('input', e => {
+    $('cfg-temp-val').textContent = e.target.value;
+  });
+  $('cfg-qualidade').addEventListener('input', e => {
+    $('cfg-qualidade-val').textContent = e.target.value;
+  });
+
+  // Toggles
+  $$('.toggle').forEach(t => {
+    t.addEventListener('click', () => t.classList.toggle('ativo'));
+  });
+
+  // Select de modelo
+  $('select-modelo').addEventListener('change', e => {
+    const [pid, mid] = e.target.value.split('::');
+    APP.provedorAtual = pid;
+    APP.modeloAtual   = mid;
+    DB.salvarConfig('provedor', pid);
+    DB.salvarConfig('modelo', mid);
+  });
+
+  // Campo de texto
+  $('campo-texto').addEventListener('input', ajustarAlturaCampo);
+  $('campo-texto').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensagemUI();
+    }
+  });
+
+  // Botão enviar
+  $('btn-enviar').addEventListener('click', enviarMensagemUI);
+
+  // Botão voz
+  $('btn-voz').addEventListener('click', iniciarVoz);
+
+  // Anexar arquivo
+  $('btn-anexar').addEventListener('click', () => $('input-arquivo').click());
+  $('input-arquivo').addEventListener('change', async e => {
+    const arquivos = Array.from(e.target.files);
+    e.target.value = '';
+
+    for (const arq of arquivos) {
+      try {
+        toast('⏳ Processando ' + arq.name + '...');
+        const anexo = await processarAnexo(arq, {
+          maxPx: APP.config.maxPxImg,
+          qualidade: APP.config.qualidadeImg
+        });
+        anexo.id = gerarId();
+        APP.anexosPendentes.push(anexo);
+        adicionarAnexoUI(anexo);
+        toast('✅ ' + arq.name + ' pronto!');
+      } catch (err) {
+        toast('❌ ' + err.message, 4000);
+      }
+    }
+  });
+
+  // Exportar/Importar chat
+  $('btn-exportar-chat').addEventListener('click', exportarChat);
+  $('btn-importar-chat').addEventListener('click', () => $('input-importar-chat').click());
+  $('input-importar-chat').addEventListener('change', e => {
+    if (e.target.files[0]) importarChat(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  // Exportar/Importar config
+  $('btn-exportar-config').addEventListener('click', exportarConfig);
+  $('btn-importar-config').addEventListener('click', () => $('input-importar-config').click());
+  $('input-importar-config').addEventListener('change', e => {
+    if (e.target.files[0]) importarConfig(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  // Limpar chats
+  $('btn-limpar-chats').addEventListener('click', async () => {
+    if (!confirm('Apagar TODOS os chats? Esta ação não pode ser desfeita.')) return;
+    await DB.apagarTodosChats();
+    APP.chats = {};
+    APP.chatAtual = null;
+    renderizarListaChats();
+    renderizarChat();
+    toast('🗑️ Todos os chats apagados');
+  });
+
+  // Resetar tudo
+  $('btn-limpar-tudo').addEventListener('click', async () => {
+    if (!confirm('RESETAR TUDO? Chaves, chats e configurações serão apagados!')) return;
+    await DB.limparTudo();
+    location.reload();
+  });
+
+  // Lightbox
+  $('lightbox').addEventListener('click', () => $('lightbox').classList.remove('aberto'));
+
+  // Sugestões da tela vazia
+  $$('.sugestao-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $('campo-texto').value = btn.dataset.texto;
+      ajustarAlturaCampo();
+      $('campo-texto').focus();
+    });
+  });
+
+  // Drag & Drop de arquivos
+  const main = $('main');
+  main.addEventListener('dragover', e => { e.preventDefault(); main.style.outline = '2px dashed var(--primaria)'; });
+  main.addEventListener('dragleave', () => { main.style.outline = ''; });
+  main.addEventListener('drop', async e => {
+    e.preventDefault();
+    main.style.outline = '';
+    const arquivos = Array.from(e.dataTransfer.files);
+    for (const arq of arquivos) {
+      try {
+        const anexo = await processarAnexo(arq, { maxPx: APP.config.maxPxImg, qualidade: APP.config.qualidadeImg });
+        anexo.id = gerarId();
+        APP.anexosPendentes.push(anexo);
+        adicionarAnexoUI(anexo);
+        toast('✅ ' + arq.name + ' adicionado!');
+      } catch (err) {
+        toast('❌ ' + err.message, 4000);
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────
+// ENVIAR MENSAGEM (UI)
+// ─────────────────────────────────────────
+function enviarMensagemUI() {
+  const campo = $('campo-texto');
+  const texto = campo.value.trim();
+  const anexos = [...APP.anexosPendentes];
+
+  if (!texto && anexos.length === 0) return;
+
+  campo.value = '';
+  ajustarAlturaCampo();
+
+  enviarMensagem(texto, anexos);
+}
+
+// ─────────────────────────────────────────
+// INICIALIZAÇÃO
+// ─────────────────────────────────────────
+async function init() {
+  try {
+    // Carregar configurações salvas
+    await carregarConfiguracoesSalvas();
+
+    // Carregar chats
+    await carregarTodosChats();
+
+    // Registrar eventos
+    registrarEventos();
+
+    // Popular select de modelos
+    await popularSelectModelos();
+
+    // Aplicar configurações na UI
+    aplicarConfiguracoes();
+
+    // Renderizar lista de chats
+    renderizarListaChats();
+
+    // Abrir último chat se existir
+    const chats = Object.values(APP.chats).sort((a,b) => (b.atualizadoEm||0) - (a.atualizadoEm||0));
+    if (chats.length > 0) {
+      APP.chatAtual = chats[0].id;
+      renderizarChat();
+    }
+
+    // Sidebar: desktop começa aberto, mobile fechado
+    if (window.innerWidth > 640) {
+      $('sidebar').classList.remove('fechado');
+    }
+
+    console.log('✅ AI Studio iniciado');
+  } catch (e) {
+    console.error('Erro ao iniciar:', e);
+    toast('❌ Erro ao iniciar: ' + e.message, 5000);
+  }
+}
+
+// Iniciar quando DOM estiver pronto
+document.addEventListener('DOMContentLoaded', init);
+</script>
+<script>// JavaScript extra
+console.log("Playground pronto!");</script></body>
+</html>

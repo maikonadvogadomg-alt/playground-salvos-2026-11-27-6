@@ -1,0 +1,4 @@
+Cópia de segurança dos Salvos do Playground (Mini SK).
+
+Para voltar tudo: no Playground, toque em "⤒ Importar vários" e escolha este .zip.
+A pasta "codigos" tem cada código como arquivo, para abrir em qualquer lugar.

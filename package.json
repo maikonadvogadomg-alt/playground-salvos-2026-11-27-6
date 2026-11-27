@@ -1,0 +1,51 @@
+{
+  "name": "playground-salvos-2026-11-27-6",
+  "version": "1.0.0",
+  "description": "playground-salvos-2026-11-27 (6)",
+  "author": "Maikon",
+  "private": true,
+  "main": "electron/main.cjs",
+  "portaDoPrograma": 7879,
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.maikonadvogadomgalt.playgroundsalvos202611276.pc",
+    "productName": "playground-salvos-2026-11-27 (6)",
+    "executableName": "playground-salvos-2026-11-27-6",
+    "directories": {
+      "output": "release"
+    },
+    "asar": false,
+    "files": [
+      "**/*",
+      "!android/**",
+      "!.github/**",
+      "!release/**",
+      "!exe/**",
+      "!node_modules/.cache/**",
+      "!*.zip",
+      "!.sk/**",
+      "!apk.config.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "icons/icon-512.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "playground-salvos-2026-11-27 (6)",
+      "artifactName": "playground-salvos-2026-11-27-6-Instalar.exe"
+    },
+    "portable": {
+      "artifactName": "playground-salvos-2026-11-27-6-sem-instalar.exe"
+    }
+  }
+}

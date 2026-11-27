@@ -1,0 +1,31 @@
+{
+  "titulo": "playground-salvos-2026-11-27 (6)",
+  "arquivo": "index.html",
+  "itens": [
+    {
+      "path": "codigos/ai-studio.html",
+      "nome": "AI Studio",
+      "desc": "",
+      "on": false,
+      "icone": ""
+    },
+    {
+      "path": "codigos/sem-titulo5.html",
+      "nome": "Meu Assistente de IA",
+      "desc": "",
+      "on": true,
+      "icone": ""
+    },
+    {
+      "path": "codigos/semotg.html",
+      "nome": "Guia Termux - Organizar Arquivos",
+      "desc": "",
+      "on": false,
+      "icone": ""
+    }
+  ],
+  "sub": "",
+  "logo": "",
+  "tema": "dourado",
+  "links": []
+}

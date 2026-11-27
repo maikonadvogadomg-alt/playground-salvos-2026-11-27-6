@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Assistente de IA</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f2f2f2;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  header {
+    background: #1f4e79;
+    color: #fff;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  #status { font-size: 14px; font-weight: bold; }
+  .config {
+    background: #fff;
+    padding: 10px 16px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 14px;
+  }
+  .config input {
+    padding: 6px;
+    font-size: 14px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+  }
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    word-wrap: break-word;
+  }
+  .user { background: #d6e4f0; margin-left: auto; }
+  .bot { background: #fff; border: 1px solid #ddd; margin-right: auto; }
+  .aviso {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    font-size: 13px;
+    margin: 6px auto;
+  }
+  .erro { color: #a33; }
+  footer {
+    padding: 10px;
+    background: #fff;
+    border-top: 1px solid #ddd;
+    display: flex;
+    gap: 8px;
+  }
+  #entrada {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    resize: vertical;
+    min-height: 50px;
+    font-family: inherit;
+  }
+  button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background: #1f4e79;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { background: #999; cursor: not-allowed; }
+  button.sec { background: #555; }
+  button.perigo { background: #a33; }
+  button.enviar { padding: 10px 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Meu Assistente de IA (Ollama)</h1>
+  <span id="status">Verificando...</span>
+</header>
+
+<div class="config">
+  Modelo: <input id="modelo" value="phi4-mini" size="14">
+  Endereço: <input id="endereco" value="http://localhost:11434" size="22">
+  <button class="sec" onclick="verificarConexao()">Testar conexão</button>
+  <button class="sec" onclick="salvarTXT()">Salvar conversa (.txt)</button>
+  <button class="perigo" onclick="limparTudo()">Apagar conversa</button>
+</div>
+
+<div id="chat"></div>
+
+<footer>
+  <textarea id="entrada" placeholder="Digite aqui. Enter envia, Shift+Enter pula linha."></textarea>
+  <button class="enviar" id="botaoEnviar" onclick="enviar()">Enviar</button>
+</footer>
+
+<script>
+  // ===== Dados guardados no navegador =====
+  let historico = [];
+  try {
+    historico = JSON.parse(localStorage.getItem("chatHistorico")) || [];
+  } catch (e) {
+    historico = [];
+  }
+
+  const chat = document.getElementById("chat");
+  const entrada = document.getElementById("entrada");
+  const botao = document.getElementById("botaoEnviar");
+  const statusEl = document.getElementById("status");
+
+  // ===== Funções de apoio =====
+  function salvarHistorico() {
+    localStorage.setItem("chatHistorico", JSON.stringify(historico));
+  }
+
+  function mostrar(texto, tipo) {
+    const div = document.createElement("div");
+    div.className = "msg " + tipo;
+    div.textContent = texto;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+
+  function mostrarAviso(texto, classe) {
+    const div = document.createElement("div");
+    div.className = "aviso " + (classe || "");
+    div.textContent = texto;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+
+  function redesenharTudo() {
+    chat.innerHTML = "";
+    if (historico.length === 0) {
+      mostrarAviso("Nenhuma conversa ainda. Digite algo abaixo para começar.");
+    }
+    historico.forEach(function (item) {
+      mostrar(item.texto, item.tipo);
+    });
+  }
+
+  function obterEndereco() {
+    return document.getElementById("endereco").value.trim().replace(/\/$/, "");
+  }
+
+  function obterModelo() {
+    return document.getElementById("modelo").value.trim();
+  }
+
+  // ===== Testar se o Ollama está respondendo =====
+  async function verificarConexao() {
+    statusEl.textContent = "Verificando...";
+    statusEl.style.color = "#fff";
+    try {
+      const resp = await fetch(obterEndereco() + "/api/tags");
+      if (resp.ok) {
+        statusEl.textContent = "Conectado ✔";
+        statusEl.style.color = "#9f9";
+        return true;
+      }
+      throw new Error("resposta " + resp.status);
+    } catch (e) {
+      statusEl.textContent = "Desconectado ✖";
+      statusEl.style.color = "#f99";
+      return false;
+    }
+  }
+
+  // ===== Enviar pergunta para a IA =====
+  async function enviar() {
+    const texto = entrada.value.trim();
+    if (texto === "") return;
+
+    entrada.value = "";
+    botao.disabled = true;
+
+    historico.push({ tipo: "user", texto: texto });
+    salvarHistorico();
+    mostrar(texto, "user");
+
+    const aguardando = mostrarAviso("Pensando...");
+
+    // Monta a conversa para a IA lembrar do contexto (últimas 20 mensagens)
+    const mensagens = historico.slice(-20).map(function (item) {
+      return {
+        role: item.tipo === "user" ? "user" : "assistant",
+        content: item.texto
+      };
+    });
+
+    try {
+      const resp = await fetch(obterEndereco() + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: obterModelo(),
+          messages: mensagens,
+          stream: false
+        })
+      });
+
+      if (!resp.ok) {
+        throw new Error("O Ollama respondeu com erro " + resp.status + ". Confira o nome do modelo.");
+      }
+
+      const dados = await resp.json();
+      const resposta = dados.message.content;
+
+      aguardando.remove();
+      historico.push({ tipo: "bot", texto: resposta });
+      salvarHistorico();
+      mostrar(resposta, "bot");
+      statusEl.textContent = "Conectado ✔";
+      statusEl.style.color = "#9f9";
+    } catch (e) {
+      aguardando.remove();
+      mostrarAviso("Erro: " + e.message + " Verifique se o Ollama está aberto (veja as dicas abaixo).", "erro");
+      statusEl.textContent = "Desconectado ✖";
+      statusEl.style.color = "#f99";
+    } finally {
+      botao.disabled = false;
+      entrada.focus();
+    }
+  }
+
+  // Enter envia; Shift+Enter pula linha
+  entrada.addEventListener("keydown", function (evento) {
+    if (evento.key === "Enter" && !evento.shiftKey) {
+      evento.preventDefault();
+      enviar();
+    }
+  });
+
+  // ===== Salvar conversa em arquivo de texto =====
+  function salvarTXT() {
+    if (historico.length === 0) {
+      alert("Ainda não há conversa para salvar.");
+      return;
+    }
+    let conteudo = "";
+    historico.forEach(function (item) {
+      const quem = item.tipo === "user" ? "Você" : "IA";
+      conteudo += quem + ":\n" + item.texto + "\n\n";
+    });
+    const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "conversa.txt";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  // ===== Apagar tudo =====
+  function limparTudo() {
+    if (!confirm("Apagar toda a conversa?")) return;
+    historico = [];
+    salvarHistorico();
+    redesenharTudo();
+  }
+
+  // ===== Início =====
+  redesenharTudo();
+  verificarConexao();
+</script>
+
+<script>// JavaScript extra
+console.log("Playground pronto!");</script></body>
+</html>

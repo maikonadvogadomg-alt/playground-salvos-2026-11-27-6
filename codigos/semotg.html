@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia Termux - Organizar Arquivos</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f6f9; color: #222; margin: 0; padding: 16px; }
+  .container { max-width: 800px; margin: auto; }
+  h1 { color: #1a4f8b; font-size: 24px; border-bottom: 3px solid #1a4f8b; padding-bottom: 6px; }
+  h2 { color: #1a4f8b; font-size: 19px; margin-top: 26px; }
+  .card { background: white; border-radius: 10px; padding: 14px 16px; margin: 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+  .passo { font-weight: bold; color: #444; }
+  pre { background: #1e1e1e; color: #e6e6e6; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 14px; white-space: pre-wrap; word-break: break-all; }
+  button { background: #1a4f8b; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 14px; cursor: pointer; margin-top: 6px; }
+  button:active { opacity: 0.7; }
+  .aviso { border-left: 6px solid #d9822b; background: #fff7ec; }
+  .dica { border-left: 6px solid #2e8b57; background: #eefaf3; }
+  textarea { width: 100%; height: 140px; font-size: 14px; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
+  #aviso-salvo { color: #2e8b57; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Guia Termux: organizar arquivos</h1>
+
+  <div class="card aviso">
+    <strong>Importante:</strong> este guia só mostra os comandos. Quem roda os comandos é o Termux. Nada aqui apaga arquivos.
+  </div>
+
+  <h2>Etapa 1: instalar o Python</h2>
+  <div class="card">
+    <p class="passo">Digite no Termux:</p>
+    <pre>pkg update
+pkg install python
+termux-setup-storage</pre>
+    <button onclick="copiar(this)">Copiar</button>
+    <p>O último comando pede permissão para acessar seus arquivos. Toque em <strong>Permitir</strong>.</p>
+  </div>
+
+  <h2>Etapa 2: criar o script</h2>
+  <div class="card">
+    <p class="passo">Digite:</p>
+    <pre>nano organizar.py</pre>
+    <button onclick="copiar(this)">Copiar</button>
+    <p>Cole o código do script que recebeu na conversa. Depois salve com <strong>Ctrl+O</strong>, <strong>Enter</strong> e saia com <strong>Ctrl+X</strong>.</p>
+  </div>
+
+  <h2>Etapa 3: prévia (não copia nada)</h2>
+  <div class="card">
+    <p class="passo">Digite:</p>
+    <pre>cd ~/storage/downloads
+python organizar.py ~/storage/downloads</pre>
+    <button onclick="copiar(this)">Copiar</button>
+    <p>Depois abra o arquivo <code>previa_relatorio.txt</code> na pasta Downloads e confira.</p>
+  </div>
+
+  <h2>Etapa 4: copiar de verdade</h2>
+  <div class="card aviso">
+    <p class="passo">Só faça isso depois de conferir a prévia:</p>
+    <pre>python organizar.py ~/storage/downloads --executar</pre>
+    <button onclick="copiar(this)">Copiar</button>
+    <p>Os arquivos organizados vão para a pasta <code>ORGANIZADO</code>. Os originais continuam no lugar.</p>
+  </div>
+
+  <h2>Erros comuns</h2>
+  <div class="card">
+    <p><strong>"python: command not found"</strong>: o Python não foi instalado. Repita a Etapa 1.</p>
+    <p><strong>"Permission denied"</strong>: rode <code>termux-setup-storage</code> de novo e aceite.</p>
+    <p><strong>Erro vermelho com a palavra Traceback</strong>: copie a última linha e me envie.</p>
+  </div>
+
+  <h2>Minhas anotações</h2>
+  <div class="card dica">
+    <p>Escreva aqui o que quiser. Fica salvo neste celular, no navegador.</p>
+    <textarea id="notas" placeholder="Ex.: rodei a prévia dia 17, deu 320 arquivos..."></textarea>
+    <span id="aviso-salvo"></span>
+  </div>
+
+</div>
+
+<script>
+// Copia o texto do bloco de código ao lado do botão
+function copiar(botao) {
+  const texto = botao.parentElement.querySelector("pre").innerText;
+  navigator.clipboard.writeText(texto).then(() => {
+    botao.textContent = "Copiado!";
+    setTimeout(() => botao.textContent = "Copiar", 1500);
+  }).catch(() => {
+    botao.textContent = "Selecione e copie manualmente";
+  });
+}
+
+// Salva as anotações automaticamente no navegador
+const campo = document.getElementById("notas");
+campo.value = localStorage.getItem("guia_notas") || "";
+campo.addEventListener("input", () => {
+  localStorage.setItem("guia_notas", campo.value);
+  document.getElementById("aviso-salvo").textContent = "Salvo automaticamente.";
+});
+</script>
+<script>// JavaScript extra
+console.log("Playground pronto!");</script></body>
+</html>
